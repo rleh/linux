@@ -1,0 +1,62 @@
+* Sony 1/2.0-Inch 8Mpixel CMOS Digital Image Sensor
+
+The Sony imx586 is a 1/2.0-inch CMOS active pixel digital image sensor with
+an active array size of 8000H x 6000V. It is programmable through I2C
+interface. The I2C addresses are fixed to 0x34 & 0x20.
+Image data is sent through MIPI CSI-2, which is configured as either 1 (?),
+2, 3 or 4 data lanes.
+
+Required Properties:
+- compatible: value should be "sony,imx586" for imx586 sensor
+- reg: I2C bus address of the device
+- reg2: Second I2C bus address of the device
+- clocks: reference to the xclk input clock.
+- clock-names: should be "xclk".
+- DOVDD-supply: Digital I/O voltage supply, 1.8 volts
+- AVDD1-supply: Analog voltage supply, 2.8 volts
+- AVDD2-supply: Analog voltage supply, 1.8 volts
+- DVDD-supply: Digital core voltage supply, 1.1 volts
+
+Optional Properties:
+- xclr-gpios: reference to the GPIO connected to the xclr pin, if any. Must be
+	      released after all supplies are applied.
+	      This is an active high signal to the imx586.
+
+The imx586 device node should contain one 'port' child node with
+an 'endpoint' subnode. For further reading on port node refer to
+Documentation/devicetree/bindings/media/video-interfaces.txt.
+
+Endpoint node required properties for CSI-2 connection are:
+- remote-endpoint: a phandle to the bus receiver's endpoint node.
+- clock-lanes: should be set to <0> (clock lane on hardware lane 0)
+- data-lanes: should be set to <1> (?), <1 2>, <1 2 3> or <1 2 3 4>
+
+Example:
+	sensor@10 {
+		compatible = "sony,imx586";
+		reg = <0x34>;
+		reg2 = <0x20>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&imx586_clk>;
+		clock-names = "xclk";
+		xclr-gpios = <&gpio_sensor 0 0>;
+		DOVDD-supply = <&vgen4_reg>; /* 1.8v */
+		AVDD1-supply = <&vgen3_reg>;  /* 2.8v */
+		AVDD2-supply = <&vgen4_reg>;  /* 1.8v */
+		DVDD-supply = <&vgen2_reg>;  /* 1.1v !!! */
+
+		imx586_clk: camera-clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <24000000>; /* ??? */
+		};
+
+		port {
+			sensor_out: endpoint {
+				remote-endpoint = <&csiss_in>;
+				clock-lanes = <0>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
